@@ -2,7 +2,7 @@
   "name": "htmlparserts",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "test_html.ts",
   "scripts": {
     "run": "tsx test_html.ts"
   },

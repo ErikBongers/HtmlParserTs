@@ -1,5 +1,5 @@
 import {Tokenizer} from "./tokenizer";
-import {Token} from "./indentTokenizer";
+import {Token} from "./HtmlTokenizer";
 
 export class PeekingTokenizer{
     tokenizer: Tokenizer;

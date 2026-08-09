@@ -1,6 +1,11 @@
 import {PeekingTokenizer} from "./PeekingTokenizer";
-import {getText, Token, TokenType} from "./indentTokenizer";
+import {getText, Token, TokenType} from "./HtmlTokenizer";
 
+export interface Element {
+    type: string;
+    children: (Element | string)[];
+    attributes: {[key: string]: string};
+}
 
 export class Parser {
     tok: PeekingTokenizer;
@@ -10,129 +15,104 @@ export class Parser {
     }
 
     parse() {
-        let res = this.parsePlus(0);
+        while(true) {
+            let element = this.parseElement();
+            if(element == null)
+                break;
+        }
+
         let next = this.tok.next();
         if(next)
             this.throwAt(`Unexpected token: ${next.type}`, next);
-        return res;
+        return null;
     }
 
 
-    parseElement(currentIndent: number): ElementDef {
-        let tag = this.tok.next();
-        let id = undefined;
-        let atts: AttDef[] = [];
-        let classList: string[] = [];
-        let innerText: string | undefined = undefined;
-
-        if (!tag) {
-            this.throwAt("Unexpected end of stream. Tag expected.", tag);
-        }
-
-        while (this.tok.peek()) {
-            if (this.match(".")) {
-                let className = this.tok.next();
-                if (!className) {
-                    this.throwAt("Unexpected end of stream. Class name expected.", className);
-                }
-                classList.push(getText(className));
-                continue;
-            }
-            if (this.match("[")) {
-                atts = this.parseAttributes(currentIndent);
-                continue;
-            }
-            if (this.match("#")) {
-                let idToken = this.tok.next();
-                if (!idToken) {
-                    this.throwAt("Unexpected end of stream. ID expected.", idToken);
-                }
-                id = getText(idToken);
-                continue;
-            }
-            let textToken = this.match("TEXT");
-            if (textToken) {
-                innerText = getText(textToken);
-                continue;
-            }
-            break;
-        }
-        return {
-            tag: getText(tag),
-            id,
-            atts,
-            classList,
-            innerText,
-            child: this.parseDown(currentIndent),
-        };
-    }
-
-    // parse >...
-    parseDown(currentIndent: number): EmmetNode | undefined {
-        if (this.match(">")) {
-            return this.parsePlus(currentIndent);
-        }
-        let indentToken = this.tok.peek();
-        if(indentToken?.type == "INDENT" && indentToken?.length > currentIndent) {
-            this.tok.next();
-            return this.parsePlus(indentToken?.length);
-        }
-        return undefined;
-    }
-
-    parseAttributes(currentIndent: number) {
-        let attDefs: AttDef[] = [];
-        while (true) {
-            if (this.match("]")) {
-                break;
-            }
-            let att = this.parseAttribute(currentIndent);
-            if (att) {
-                attDefs.push(att);
-            } else {
-                break;
-            }
-        }
-        return attDefs;
-    }
-
-    parseAttribute(currentIndent: number) {
-        let nameToken = this.tok.next();
-        if (!nameToken) {
+    parseElement(): Element | null {
+        let t = this.tok.next();
+        if(t == null)
             return null;
-        }
-        let name = getText(nameToken);
-        if (name[0] === ",") {
-            this.throwAt("Unexpected ',' - don't separate attributes with ','.", nameToken);
-        }
-        let eq = this.tok.next();
-        if (!eq) {
-            this.throwAt("Unexpected end of stream. '=' expected.", eq);
-        }
-        let subToken: Token | null;
-        let sub: string = "";
-        if (eq.type === ".") {
-            subToken = this.tok.next();
-            if (subToken) {
-                sub = getText(subToken);
+        if (t.type == "<") {
+            let name = this.match("IDENT")?.cursor.getText(t.pos, t.length);
+            if(name == null)
+                this.throwAt("Expected IDENT", t);
+            let attributes = this.parseAttributes();
+            t = this.tok.next();
+            if(t == null)
+                this.throwAt("Unexpected EOF", null);
+            if(this.match("/>")) {
+                return {
+                    type: name,
+                    children: [],
+                    attributes,
+                };
             }
-            eq = this.tok.next();
+            if (t.type != ">") {
+                this.throwAt("Expected > or />", t);
+            }
+            let content = this.parseElementContent();
+            this.parseClosingTag(t, name);
+            return {
+                type: name,
+                children: content,
+                attributes,
+            };
         }
-        if (eq?.type != "=") {
-            this.throwAt("Equal sign expected.", eq);
+        return null;
+    }
+
+    private parseClosingTag(t: Token, name: string) {
+        if (this.match("</")) {
+            let closeName = this.match("IDENT")?.cursor.getText(t.pos, t.length);
+            if (closeName == null)
+                this.throwAt("Expected IDENT", t);
+            if (closeName != name)
+                this.throwAt(`Expected </${name}>`, t);
+            if (this.match(">"))
+                return;
+            this.throwAt("Expected >", t);
         }
-        let valueToken = this.tok.next();
-        if (!valueToken) {
-            this.throwAt("Value expected", valueToken);
+        return t;
+    }
+
+    parseElementContent(): (Element | string)[] {
+        let content: (Element | string)[] = [];
+        while(true) {
+            let t = this.tok.peek();
+            if (t == null)
+                this.throwAt("Unexpected EOF", null);
+            if (t.type == "<") {
+                let child = this.parseElement();
+                if (child == null)
+                    break;
+                content.push(child);
+            } else {
+                let text = this.tok.next()!.cursor.getText(t.pos, t.length);
+                content.push(text);
+            }
         }
-        if(valueToken.type != "STRING" && valueToken.type != "NUMBER") {
-            this.throwAt(`Value should be STRING or NUMBER. Found ${valueToken.type}.`, valueToken);
+        return content;
+    }
+
+    parseAttributes(): {[key: string]: string} {
+        let attrs: {[key: string]: string} = {};
+        while(true) {
+            let t = this.tok.peek();
+            if (t == null)
+                this.throwAt("Unexpected EOF", null);
+            if (t.type == ">" || t.type == "/>")
+                break;
+            if (t.type == "IDENT") {
+                let attrName = this.match("IDENT")!.cursor.getText(t.pos, t.length);
+                let attrValue = this.match("=")?.cursor.getText(t.pos, t.length);
+                if (attrValue == null)
+                    this.throwAt("Expected =", t);
+                attrs[attrName] = this.stripStringDelimiters(attrValue);
+                continue;
+            }
+            this.throwAt("Expected IDENT", t);
         }
-        let value = getText(valueToken);
-        if (value[0] === '"') {
-            value = this.stripStringDelimiters(value);
-        }
-        return { name, sub, value } satisfies AttDef as AttDef;
+        return attrs;
     }
 
     match(expected: TokenType) {
@@ -156,11 +136,11 @@ export class Parser {
         return `line ${line}, col ${col}\n${token.cursor.getLine(token.pos)}\n${" ".repeat(col-1)}^`;
     }
 
-    throwAt(mesagee: string, token: Token | null): never {
+    throwAt(message: string, token: Token | null): never {
         if(token)
-            throw new Error(`${mesagee}\n  at ${this.printLocation(token)}`);
+            throw new Error(`${message}\n  at ${this.printLocation(token)}`);
         else
-            throw new Error(`${mesagee}\n  at EOF`);
+            throw new Error(`${message}\n  at EOF`);
     }
 
 

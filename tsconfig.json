@@ -1,6 +1,6 @@
 {
     "files": [
-        "test_html.ts"
+        "*.ts"
     ],
     "exclude": [],
     "compilerOptions": {

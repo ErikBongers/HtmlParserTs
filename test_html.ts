@@ -17,4 +17,7 @@ function main() {
             process.stdout.write(txt+" ");
     }
 
+    let parser = new Parser(tok);
+    parser.parse();
+
 }

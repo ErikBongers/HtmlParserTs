@@ -1,0 +1,5 @@
+* The parser/tokenizer should also detect the placeholders.
+  > also within string values !!!!
+  > in fact, only allowed in content and attribute values.
+  > perhaps parser should NOT find these...
+parser builds full tree.
