@@ -1,0 +1,14 @@
+{
+  "name": "htmlparserts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "run": "tsx test_html.ts"
+  },
+  "private": true,
+  "devDependencies": {
+    "@types/node": "^25.0.1",
+    "tsx": "^4.23.11"
+  }
+}
