@@ -1,4 +1,4 @@
-import {Token} from "./HtmlTokenizer.ts";
+import {Token} from "./HtmlTokenizer";
 
 export interface Tokenizer {
     next(): Token | null;
