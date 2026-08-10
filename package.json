@@ -6,6 +6,7 @@
   "scripts": {
     "run": "tsx test_html.ts"
   },
+  "type": "module",
   "private": true,
   "devDependencies": {
     "@types/node": "^25.0.1",

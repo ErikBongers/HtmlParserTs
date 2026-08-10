@@ -30,7 +30,7 @@ export class HtmlTokenizer implements Tokenizer {
     }
 
     clone() {
-        let theClone = new IndentTokenizer("");
+        let theClone = new HtmlTokenizer("");
         theClone.setCursor(this.cloneCursor());
         return theClone;
     }
@@ -136,7 +136,7 @@ export class HtmlTokenizer implements Tokenizer {
                 this.cursor.next();
             }
             return {
-                type: "ID",
+                type: "IDENT",
                 cursor: this.cursor,
                 pos,
                 length: this.cursor.pos - pos+1,

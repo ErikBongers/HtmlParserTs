@@ -1,4 +1,6 @@
 import {getText, HtmlTokenizer} from "./HtmlTokenizer";
+import {Parser} from "./parser";
+import {PeekingTokenizer} from "./PeekingTokenizer";
 
 main();
 
@@ -17,7 +19,18 @@ function main() {
             process.stdout.write(txt+" ");
     }
 
-    let parser = new Parser(tok);
-    parser.parse();
+    let parser = new Parser(new PeekingTokenizer(new HtmlTokenizer(text)));
+    let elements = parser.parse();
+    console.log(elements);
+
+    text = "<div id='test' class='test2'>Hello</div>";
+    parser = new Parser(new PeekingTokenizer(new HtmlTokenizer(text)));
+    elements = parser.parse();
+    console.log(elements);
+
+    text = "<div id='test' class='test2'>Hello <span>World</span></div>";
+    parser = new Parser(new PeekingTokenizer(new HtmlTokenizer(text)));
+    elements = parser.parse();
+    console.log(JSON.stringify(elements, null, 2));
 
 }

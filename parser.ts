@@ -2,7 +2,7 @@ import {PeekingTokenizer} from "./PeekingTokenizer";
 import {getText, Token, TokenType} from "./HtmlTokenizer";
 
 export interface Element {
-    type: string;
+    tag: string;
     children: (Element | string)[];
     attributes: {[key: string]: string};
 }
@@ -15,16 +15,18 @@ export class Parser {
     }
 
     parse() {
+        let elements: Element[] = [];
         while(true) {
             let element = this.parseElement();
             if(element == null)
                 break;
+            elements.push(element);
         }
 
         let next = this.tok.next();
         if(next)
             this.throwAt(`Unexpected token: ${next.type}`, next);
-        return null;
+        return elements;
     }
 
 
@@ -33,16 +35,17 @@ export class Parser {
         if(t == null)
             return null;
         if (t.type == "<") {
-            let name = this.match("IDENT")?.cursor.getText(t.pos, t.length);
-            if(name == null)
+            t = this.match("IDENT");
+            if(t == null)
                 this.throwAt("Expected IDENT", t);
+            let name = t.cursor.getText(t.pos, t.length);
             let attributes = this.parseAttributes();
             t = this.tok.next();
             if(t == null)
                 this.throwAt("Unexpected EOF", null);
             if(this.match("/>")) {
                 return {
-                    type: name,
+                    tag: name,
                     children: [],
                     attributes,
                 };
@@ -53,7 +56,7 @@ export class Parser {
             let content = this.parseElementContent();
             this.parseClosingTag(t, name);
             return {
-                type: name,
+                tag: name,
                 children: content,
                 attributes,
             };
@@ -63,7 +66,8 @@ export class Parser {
 
     private parseClosingTag(t: Token, name: string) {
         if (this.match("</")) {
-            let closeName = this.match("IDENT")?.cursor.getText(t.pos, t.length);
+            let t = this.match("IDENT");
+            let closeName = t?.cursor.getText(t.pos, t.length);
             if (closeName == null)
                 this.throwAt("Expected IDENT", t);
             if (closeName != name)
@@ -86,6 +90,8 @@ export class Parser {
                 if (child == null)
                     break;
                 content.push(child);
+            } else if (t.type == "</") {
+                break;
             } else {
                 let text = this.tok.next()!.cursor.getText(t.pos, t.length);
                 content.push(text);
@@ -104,7 +110,13 @@ export class Parser {
                 break;
             if (t.type == "IDENT") {
                 let attrName = this.match("IDENT")!.cursor.getText(t.pos, t.length);
-                let attrValue = this.match("=")?.cursor.getText(t.pos, t.length);
+                let eq = this.match("=");
+                if (eq == null)
+                    this.throwAt("Expected =", t);
+                t = this.match("STRING");
+                if (t == null)
+                    this.throwAt("Expected STRING", t);
+                let attrValue = t.cursor.getText(t.pos, t.length);
                 if (attrValue == null)
                     this.throwAt("Expected =", t);
                 attrs[attrName] = this.stripStringDelimiters(attrValue);
