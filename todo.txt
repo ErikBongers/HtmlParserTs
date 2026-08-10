@@ -1,5 +1,41 @@
+* Cursor has been improved, move it back to Emmeter (and test getTo and getUpTo).
+
+* Since element content can contain both text and elements,
+  replacing a placeholder in the content text is not easy.
+  > Perhaps easiest to loop the text nodes and just replace where found.
+    : node.nodeValue = "new value";
+
+
+* Scan the AST for place holders and generate a list.
 * The parser/tokenizer should also detect the placeholders.
   > also within string values !!!!
   > in fact, only allowed in content and attribute values.
   > perhaps parser should NOT find these...
 parser builds full tree.
+
+
+HTML string tags
+=================
+Example:
+--------
+<div>This is {variable} !</div>   >>> this cannot work because we don't know how to find the div without an id!
+<div id="title">This is {var1} and {var2} !</div>
+<div id="title" class="flex {var1} {var2} row">...
+<div id="[title]">This is {variable} !</div>  >>> this checks if title is a defined attribute.
+
+
+This should result in
+-----------------------
+this.shadow.getElementById("title").node[n].nodeValue = "This is " + this.getAtt("variable").value + "...";
+or better a mapping like:
+{
+    id: "title", [
+        {
+        target: "content",
+        nodeIndex: <n>,
+        parts:["This is ", {att:"var1"}, " and ", {att:"var2"}, " !"]
+        }
+    ]
+}
+
+

@@ -1,10 +1,12 @@
 import {PeekingTokenizer} from "./PeekingTokenizer";
-import {getText, Token, TokenType} from "./HtmlTokenizer";
+import {Token, TokenType} from "./HtmlTokenizer";
 
-export interface Element {
+export type Nodes = (ElementDef | string)[];
+
+export interface ElementDef {
     tag: string;
-    children: (Element | string)[];
-    attributes: {[key: string]: string};
+    nodes: Nodes;
+    attributes: Map<string, string>;
 }
 
 export class Parser {
@@ -15,7 +17,7 @@ export class Parser {
     }
 
     parse() {
-        let elements: Element[] = [];
+        let elements: ElementDef[] = [];
         while(true) {
             let element = this.parseElement();
             if(element == null)
@@ -30,7 +32,7 @@ export class Parser {
     }
 
 
-    parseElement(): Element | null {
+    parseElement(): ElementDef | null {
         let t = this.tok.next();
         if(t == null)
             return null;
@@ -46,7 +48,7 @@ export class Parser {
             if(this.match("/>")) {
                 return {
                     tag: name,
-                    children: [],
+                    nodes: [],
                     attributes,
                 };
             }
@@ -57,7 +59,7 @@ export class Parser {
             this.parseClosingTag(t, name);
             return {
                 tag: name,
-                children: content,
+                nodes: content,
                 attributes,
             };
         }
@@ -79,8 +81,8 @@ export class Parser {
         return t;
     }
 
-    parseElementContent(): (Element | string)[] {
-        let content: (Element | string)[] = [];
+    parseElementContent(): Nodes {
+        let content: Nodes = [];
         while(true) {
             let t = this.tok.peek();
             if (t == null)
@@ -100,8 +102,8 @@ export class Parser {
         return content;
     }
 
-    parseAttributes(): {[key: string]: string} {
-        let attrs: {[key: string]: string} = {};
+    parseAttributes(): Map<string, string> {
+        let attrs: Map<string, string> = new Map();
         while(true) {
             let t = this.tok.peek();
             if (t == null)
@@ -119,7 +121,7 @@ export class Parser {
                 let attrValue = t.cursor.getText(t.pos, t.length);
                 if (attrValue == null)
                     this.throwAt("Expected =", t);
-                attrs[attrName] = this.stripStringDelimiters(attrValue);
+                attrs.set(attrName, this.stripStringDelimiters(attrValue));
                 continue;
             }
             this.throwAt("Expected IDENT", t);
@@ -137,7 +139,7 @@ export class Parser {
     }
 
     stripStringDelimiters(text: string) {
-        if (text[0] === "'" || text[0] === '"' || text[0] === "{") {
+        if (text[0] === "'" || text[0] === '"') {
             return text.substring(1, text.length - 1);
         }
         return text;

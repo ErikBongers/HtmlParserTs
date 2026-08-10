@@ -16,6 +16,7 @@ export function getText(token: Token) {
 
 export class HtmlTokenizer implements Tokenizer {
     private cursor: Cursor;
+    private outside_tag = true;
 
     constructor(text: string) {
         this.cursor = new Cursor(text);
@@ -32,10 +33,22 @@ export class HtmlTokenizer implements Tokenizer {
     clone() {
         let theClone = new HtmlTokenizer("");
         theClone.setCursor(this.cloneCursor());
+        theClone.outside_tag = this.outside_tag;
         return theClone;
     }
 
     next(): Token | null {
+        if(this.outside_tag) {
+            let t = this.nextTokenOutsideTag();
+            if(t?.length == 0)
+                return this.nextTokenInsideTag();
+            return t;
+        } else {
+            return this.nextTokenInsideTag();
+        }
+    }
+
+    private nextTokenInsideTag(): Token | null {
         this.skipWhiteSpace();
         let char = this.cursor.next();
         let found: CursorRange | null;
@@ -46,6 +59,7 @@ export class HtmlTokenizer implements Tokenizer {
             case "":
                 return null;
             case '<':
+                this.outside_tag = false;
                 if(this.cursor.peek() == "/") {
                     this.cursor.next();
                     return {
@@ -63,6 +77,8 @@ export class HtmlTokenizer implements Tokenizer {
                     };
                 }
             case '>':
+                this.outside_tag = true;
+                //fallthrough
             case '=':
                 return {
                     type: char as TokenType,
@@ -72,6 +88,7 @@ export class HtmlTokenizer implements Tokenizer {
                 };
             case "/":
                 if(this.cursor.peek() == ">") {
+                    this.outside_tag = true;
                     this.cursor.next();
                     return {
                         type: "/>",
@@ -127,6 +144,22 @@ export class HtmlTokenizer implements Tokenizer {
                     length: 1,
                 };
         }
+    }
+
+
+    private nextTokenOutsideTag(): Token | null {
+        let found: CursorRange | null;
+        found = this.cursor.getUpTo("<"); //this matches both "<" and "</"
+        if(found) {
+            this.outside_tag = false;
+            return {
+                type: "STRING",
+                cursor: this.cursor,
+                pos: found.start,
+                length: found.length,
+            }
+        }
+        return null;
     }
 
     private eatId(char: string) {

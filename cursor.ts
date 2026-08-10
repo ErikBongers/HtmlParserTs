@@ -54,7 +54,7 @@ export class Cursor {
         return this.text.substring(pos, pos+length);
     }
 
-    getTo(endChar: string) {
+    getUpTo(endChar: string) {
         let start = this.currentPos+1;
         let end = start;
         while(end < this.length && this.text[end] != endChar) {
@@ -62,8 +62,18 @@ export class Cursor {
         }
         if(end == this.length)
             return null;
-        this.currentPos = end;
-        return {start, length: this.currentPos-start+1} satisfies CursorRange as CursorRange;
+        let length = end-start;
+        this.currentPos += length;
+        return {start, length} satisfies CursorRange as CursorRange;
+    }
+
+    getTo(endChar: string) {
+        let result = this.getUpTo(endChar);
+        if(result) {
+            this.currentPos++;
+            result.length++;
+        }
+        return result;
     }
 
     getToNot(notChar: string) {
