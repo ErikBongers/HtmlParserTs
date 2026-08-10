@@ -157,5 +157,4 @@ export class Parser {
             throw new Error(`${message}\n  at EOF`);
     }
 
-
 }

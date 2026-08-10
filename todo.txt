@@ -1,3 +1,6 @@
+* Make HtmlParserTs a lib and import it into eboplayer (like Emmeter)
+* Put placeholder code (test_html) in eboplayer. It can run as stand-alone
+
 * Cursor has been improved, move it back to Emmeter (and test getTo and getUpTo).
 
 * Since element content can contain both text and elements,
