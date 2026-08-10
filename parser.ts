@@ -45,7 +45,7 @@ export class Parser {
             t = this.tok.next();
             if(t == null)
                 this.throwAt("Unexpected EOF", null);
-            if(this.match("/>")) {
+            if(t.type == "/>") {
                 return {
                     tag: name,
                     nodes: [],
