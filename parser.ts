@@ -18,6 +18,7 @@ export class Parser {
 
     parse() {
         let elements: ElementDef[] = [];
+        this.match("STRING"); //skip the first string.
         while(true) {
             let element = this.parseElement();
             if(element == null)
