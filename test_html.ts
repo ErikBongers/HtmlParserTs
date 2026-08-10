@@ -17,6 +17,7 @@ function main() {
     // text = "<div id='test' class='test2'>Hello {name} and <span>World</span></div>";
     // text = "<div id='DaAjdee' class='{DaClaz}'>Hello {DaNaym} and <span>World</span></div>";
     text = "<div>Hello <img id='daImazz' src='{daSrc}'/></div>";
+    text = "<div>Hello <img id='daImazz' src='{daSrc}'></div>";
     console.log(text);
     // printTokens(text);
     // return;

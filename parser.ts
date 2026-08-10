@@ -55,6 +55,14 @@ export class Parser {
             if (t.type != ">") {
                 this.throwAt("Expected > or />", t);
             }
+            //these tags are "void elements" and cannot have children or a closing tag.
+            if(["area", "base", "br", "col", "command", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"].includes(name)) {
+                return {
+                    tag: name,
+                    nodes: [],
+                    attributes,
+                };
+            }
             let content = this.parseElementContent();
             this.parseClosingTag(t, name);
             return {
