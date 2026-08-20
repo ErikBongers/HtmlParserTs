@@ -1,7 +1,6 @@
 import {getText, HtmlTokenizer} from "./HtmlTokenizer";
 import {ElementDef, Parser} from "./parser";
 import {PeekingTokenizer} from "./PeekingTokenizer";
-import {Cursor} from "./cursor";
 
 main();
 // testRegex();
@@ -16,8 +15,9 @@ function main() {
     // return;
     // text = "<div id='test' class='test2'>Hello {name} and <span>World</span></div>";
     // text = "<div id='DaAjdee' class='{DaClaz}'>Hello {DaNaym} and <span>World</span></div>";
+    let zever="zever";
     text = "<div>Hello <img id='daImazz' src='{daSrc}'/></div>";
-    text = "<div>Hello <img id='daImazz' src='{daSrc} ' toggle></div>";
+    text = `"<div>Hello <img id='daImazz' src='{daSrc} ' toggle brol='${zever}'></div>"`;
     console.log(text);
     // printTokens(text);
     // return;
