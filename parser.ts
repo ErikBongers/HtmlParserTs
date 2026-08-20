@@ -121,15 +121,14 @@ export class Parser {
                 break;
             if (t.type == "IDENT") {
                 let attrName = this.match("IDENT")!.cursor.getText(t.pos, t.length);
+                let attrValue = "";
                 let eq = this.match("=");
-                if (eq == null)
-                    this.throwAt("Expected =", t);
-                t = this.match("STRING");
-                if (t == null)
-                    this.throwAt("Expected STRING", t);
-                let attrValue = t.cursor.getText(t.pos, t.length);
-                if (attrValue == null)
-                    this.throwAt("Expected =", t);
+                if (eq != null) {
+                    t = this.match("STRING");
+                    if (t == null)
+                        this.throwAt("Expected STRING", t);
+                    attrValue = t.cursor.getText(t.pos, t.length);
+                }
                 attrs.set(attrName, this.stripStringDelimiters(attrValue));
                 continue;
             }

@@ -1,6 +1,6 @@
 {
   "name": "htmlparserts",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "",
   "main": "test_html.ts",
   "scripts": {
