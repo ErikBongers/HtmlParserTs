@@ -56,7 +56,7 @@ function generateAllPlaceHolders(nodes: (ElementDef | string)[]) {
 
 function generateElementPlaceHolders(element: ElementDef, placeHolders: PlaceHolder[]): void {
     let attDef = element.attributes.get("id");
-    let id = attDef == null ? null : getText(attDef.name);
+    let id = attDef == null ? null : (attDef.value == null ? null : getText(attDef.value));
     // generate attribute placeholders.
     for (let [attributeName, attrValue] of element.attributes) {
         if (attrValue.value == null)
@@ -69,7 +69,7 @@ function generateElementPlaceHolders(element: ElementDef, placeHolders: PlaceHol
                 ...createTextPlaceholders(
                     attrValue.value,
                     "attribute",
-                    getText(attDef.name),
+                    id??"--no id--",
                     -1,
                     attributeName,
                 )
