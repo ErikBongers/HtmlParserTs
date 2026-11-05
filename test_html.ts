@@ -1,4 +1,4 @@
-import {getText, HtmlTokenizer} from "./HtmlTokenizer";
+import {getText, HtmlTokenizer, isToken, Token} from "./HtmlTokenizer";
 import {ElementDef, Parser} from "./parser";
 import {PeekingTokenizer} from "./PeekingTokenizer";
 
@@ -48,24 +48,28 @@ function generateAllPlaceHolders(nodes: (ElementDef | string)[]) {
         if (typeof element == "string") {
             throw new Error("Top level text can't have placeholders.");
         } else
-            generatePlaceHolder(element, placeholders);
+            generateElementPlaceHolders(element, placeholders);
 
     }
     return placeholders;
 }
 
-function generatePlaceHolder(element: ElementDef, placeHolders: PlaceHolder[]): void {
-    let id = element.attributes.get("id");
+function generateElementPlaceHolders(element: ElementDef, placeHolders: PlaceHolder[]): void {
+    let attDef = element.attributes.get("id");
+    let id = attDef == null ? null : getText(attDef.name);
     // generate attribute placeholders.
     for (let [attributeName, attrValue] of element.attributes) {
-        if (attrValue.includes("{")) {
-            if (id == null)
+        if (attrValue.value == null)
+            continue;
+        let attrValueText = getText(attrValue.value);
+        if (attrValueText.includes("{")) {
+            if (attDef == null)
                 throw new Error("Element must have an id to use placeholders.");
             placeHolders.push(
                 ...createTextPlaceholders(
-                    attrValue,
+                    attrValue.value,
                     "attribute",
-                    id,
+                    getText(attDef.name),
                     -1,
                     attributeName,
                 )
@@ -74,24 +78,24 @@ function generatePlaceHolder(element: ElementDef, placeHolders: PlaceHolder[]): 
     }
     // generate content placeholders.
     for (let [i, node] of element.nodes.entries()) {
-        if (typeof node == "string") {
-                placeHolders.push(
-                    ...createTextPlaceholders(
-                        node,
-                        "content",
-                        id,
-                        i,
-                        "",
-                    )
-                );
+        if (isToken(node)) {
+            placeHolders.push(
+                ...createTextPlaceholders(
+                    node,
+                    "content",
+                    id??"--no id--",
+                    i,
+                    "",
+                )
+            );
         } else {
-            generatePlaceHolder(node, placeHolders);
+            generateElementPlaceHolders(node, placeHolders);
         }
     }
 }
 
-function createTextPlaceholders(text: string, type: PlaceHolderType, elementId: string | undefined, nodeIndex: number, attributeName: string): PlaceHolder[] {
-
+function createTextPlaceholders(token: Token, type: PlaceHolderType, elementId: string | undefined, nodeIndex: number, attributeName: string): PlaceHolder[] {
+    let text = token.cursor.getText(token.pos, token.length);
     if (!text.includes("{")) {
         return [];
     }

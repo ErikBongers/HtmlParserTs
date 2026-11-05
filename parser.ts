@@ -1,12 +1,17 @@
 import {PeekingTokenizer} from "./PeekingTokenizer";
 import {Token, TokenType} from "./HtmlTokenizer";
 
-export type Nodes = (ElementDef | string)[];
+export type Nodes = (ElementDef | Token)[];
+
+export interface AttrubuteDef {
+    name: Token;
+    value: Token | null; //includes quotes!
+}
 
 export interface ElementDef {
     tag: string;
     nodes: Nodes;
-    attributes: Map<string, string>;
+    attributes: Map<string, AttrubuteDef>;
 }
 
 export class Parser {
@@ -104,15 +109,14 @@ export class Parser {
             } else if (t.type == "</") {
                 break;
             } else {
-                let text = this.tok.next()!.cursor.getText(t.pos, t.length);
-                content.push(text);
+                content.push(this.tok.next()!);
             }
         }
         return content;
     }
 
-    parseAttributes(): Map<string, string> {
-        let attrs: Map<string, string> = new Map();
+    parseAttributes(): Map<string, AttrubuteDef> {
+        let attrs: Map<string, AttrubuteDef> = new Map();
         while(true) {
             let t = this.tok.peek();
             if (t == null)
@@ -120,16 +124,17 @@ export class Parser {
             if (t.type == ">" || t.type == "/>")
                 break;
             if (t.type == "IDENT") {
-                let attrName = this.match("IDENT")!.cursor.getText(t.pos, t.length);
-                let attrValue = "";
+                let attrName = this.match("IDENT")!;
+                let attrNameText = attrName.cursor.getText(t.pos, t.length);
+                let attrValue: Token | null = null;
                 let eq = this.match("=");
                 if (eq != null) {
                     t = this.match("STRING");
                     if (t == null)
                         this.throwAt("Expected STRING", t);
-                    attrValue = t.cursor.getText(t.pos, t.length);
+                    attrValue = t;//.cursor.getText(t.pos, t.length);
                 }
-                attrs.set(attrName, this.stripStringDelimiters(attrValue));
+                attrs.set(attrNameText, {name: attrName, value: attrValue});
                 continue;
             }
             this.throwAt("Expected IDENT", t);

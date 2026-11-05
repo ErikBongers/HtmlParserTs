@@ -10,6 +10,10 @@ export interface Token {
     length: number;
 }
 
+export function isToken(token: any): token is Token {
+    return token.type !== undefined && token.cursor !== undefined;
+}
+
 export function getText(token: Token) {
     return token.cursor.getText(token.pos, token.length);
 }
